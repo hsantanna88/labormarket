@@ -14,3 +14,5 @@ Imports:
     fixest,
     Matrix,
     boot
+URL: https://github.com/hsantanna88/lmbias
+BugReports: https://github.com/hsantanna88/lmbias/issues
