@@ -26,7 +26,7 @@
 #' 
 #' @import Matrix
 #' @importFrom boot boot
-#' @importFrom lfe feols
+#' @importFrom lfe compfactor
 #' @import fixest
 #' @export
 #' 
