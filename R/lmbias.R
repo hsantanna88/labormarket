@@ -191,7 +191,6 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000,
     paste0("Correlation")
   )
   rownames(results) <- c("Original", "Bias", "Corrected")
-  print(results)
-
+  
   return(results)
 }
