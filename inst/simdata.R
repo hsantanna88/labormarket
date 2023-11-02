@@ -14,37 +14,72 @@ library(crayon)
 dnorm(0, sd = 1)
 
 # Function to create a simulated labor market
-simlabormarket <- function(nk = 30, nl = 10, alpha_sd = 1, psi_sd = 1, lambda = 0.05, csort = 0.5,
-                            nt = 5, ni = 100000, w_sigma = 0.5,
-                            cnetw = 0.2, csig = 0.5, pl = FALSE) {
+simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
 
 
+  # Labor Market Inner Parameters
+  #-------------------------------------------------------------------------------------------------
+
+  # individual fixed effect standard deviation
+  alpha_sd = 1
+  # firm fixed effect standard deviation
+  psi_sd = 1
+  # probability of moving
+  lambda = 0.05
+  # sorting effect
+  csort = 0.5
+  # network effect
+  cnetw = 0.2
+  # probability of moving standard deviation
+  csig = 0.5
 	# Starting point for making firms
 	fsize = 10
+  # standard deviation for wages
+  w_sigma = 0.5
+  # maximum years of experience
+  nexp = 12
+  
+  # Fixed Average Effects Generator (per types)
+  #-------------------------------------------------------------------------------------------------
 
-  # Drawing the fix effects
+  # Drawing the fix effects averages (and normalizing)
   psi   = qnorm(1:nk/(nk+1)) * psi_sd
   alpha = qnorm(1:nl/(nl+1)) * alpha_sd
 
 
-  # Generating the transition matrix based on the sorting effect and network effect
-  # Observe that the transition matrix is a 3D array
-  # It also leverages the property of a normal distribution by using dnorm(0) as the highest probability
-  G = array(0,c(nl,nk,nk))
-  for (l in 1:nl) for (k in 1:nk) {
-    # prob of moving is highest if dnorm(0)
-    G[l,k,] = dnorm(psi - cnetw * psi[k] - csort * alpha[l], sd = csig)
+  # Matrix Building
+  #-------------------------------------------------------------------------------------------------
 
+  # imposing a sorting bias
+  sort_bias = min(psi)/10
+
+  # worker gender (male = 1/female = 2)
+  ng = 2
+
+  # Generating the transition matrix based on the sorting effect and network effect
+  # we expect closer to zero values to have higher moving probability
+
+  # transition matrix
+  G = array(0,c(nl, nk, nk, g))
+  for (g in 1:ng) for (l in 1:nl) for (k in 1:nk){
+
+    if(g == 2) {
+      G[l, k, , g] = dnorm(psi  - cnetw * psi[k] - csort * alpha[l] - sort_bias, sd = csig)
+    } else {
+      G[l, k, ,g] = dnorm(psi - cnetw * psi[k] - csort * alpha[l], sd = csig)
+    }
     # normalize to get transition matrix
-    G[l,k,] = G[l,k,]/sum(G[l,k,])
+    G[l, k, , g] = G[l, k, , g]/sum(G[l, k, , g])
   }
 
-
+  # normalizing the fixed effects
+  psi = psi - min(psi)
+  alpha = alpha - min(alpha)
 
   # we then solve for the stationary distribution over psis for each alpha value
-  H = array(1/nk,c(nl,nk)) # make a initial matrix for L x K
-  for (l in 1:nl) for (i in 1:100) {
-    H[l,] = t(G[l,,]) %*% H[l,]
+  H = array(1/nk,c(nl,nk, ng)) # make a initial matrix for L x K
+  for (g in 1:2) for (l in 1:nl) for (i in 1:100) {
+    H[l, ,g] = t(G[l, , ,g]) %*% H[l, ,g]
   }
 
   # plotting the transition matrix and the steady-state matrix
@@ -60,14 +95,24 @@ simlabormarket <- function(nk = 30, nl = 10, alpha_sd = 1, psi_sd = 1, lambda = 
   # we simulate a panel
   network    = array(0,c(ni,nt))
   spellcount = array(0,c(ni,nt))
-  A = rep(0,ni)
+
+  # worker matrix (worker type, gender, experience, age)
+  A = array(0,c(ni, 4))
 
   for (i in 1:ni) {
     # we draw the worker type
     l = sample.int(nl,1)
-    A[i]=l
+    # we draw the gender type
+    g = ifelse(runif(1) >= g_ratio, 1, 2)
+    # we draw the initial experience level
+    e = sample.int(nexp,1)
+    # we draw the initial worker age
+    a  = sample.int(65-18,1) + 18
+    # We build the matrix A
+    A[i,] = c(l, g, e, a)
+
     # at time 1, we draw from H
-    network[i,1] = sample.int(nk,1,prob = H[l,])
+    network[i,1] = sample.int(nk,1,prob = H[l, , g])
     for (t in 2:nt) {
       if (runif(1)<lambda) {
         network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1],])
@@ -85,6 +130,9 @@ simlabormarket <- function(nk = 30, nl = 10, alpha_sd = 1, psi_sd = 1, lambda = 
 
 	data[, spell := data2$value]
 	data[, l := A[i], i]
+  data[, g := A[i,2], i]
+  data[, xp := A[i,3], i]
+  data[, age := A[i,4], i]
 	data[, alpha := alpha[l], l]
 	data[, psi := psi[k], k]
 
