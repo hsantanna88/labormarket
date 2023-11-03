@@ -10,22 +10,27 @@ library(ggplot2)
 library(futile.logger)
 library(feather)
 library(crayon)
+library(methods)
 
-dnorm(0, sd = 1)
 
-# Function to create a simulated labor market
-simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
+# Time to create a labor market with men and women, different ages and experience level.
 
+
+
+simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
 
   # Labor Market Inner Parameters
   #-------------------------------------------------------------------------------------------------
 
-  # individual fixed effect standard deviation
+  # match seed standard deviation
   alpha_sd = 1
   # firm fixed effect standard deviation
   psi_sd = 1
-  # probability of moving
-  lambda = 0.05
+  # Drawing the random effects averages for firms
+  psi_mean = qnorm(1:nk/(nk+1)) * psi_sd
+  # Drawing the match effects seeds for individuals
+  alpha_mean = qnorm(1:nl/(nl+1)) * alpha_sd
+
   # sorting effect
   csort = 0.5
   # network effect
@@ -36,22 +41,17 @@ simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000,
 	fsize = 10
   # standard deviation for wages
   w_sigma = 0.5
-  # maximum years of experience
-  nexp = 12
-  
-  # Fixed Average Effects Generator (per types)
-  #-------------------------------------------------------------------------------------------------
-
-  # Drawing the fix effects averages (and normalizing)
-  psi   = qnorm(1:nk/(nk+1)) * psi_sd
-  alpha = qnorm(1:nl/(nl+1)) * alpha_sd
+  # maximum years of education
+  neduc = 24
+  # modifying the sd to be alpha specific (useful later for matching effects)
+  alpha_sd = rnorm(nl)
 
 
   # Matrix Building
   #-------------------------------------------------------------------------------------------------
 
   # imposing a sorting bias
-  sort_bias = min(psi)/10
+  sort_gap = min(psi_mean)/10
 
   # worker gender (male = 1/female = 2)
   ng = 2
@@ -60,21 +60,20 @@ simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000,
   # we expect closer to zero values to have higher moving probability
 
   # transition matrix
-  G = array(0,c(nl, nk, nk, g))
+  G = array(0,c(nl, nk, nk, ng))
   for (g in 1:ng) for (l in 1:nl) for (k in 1:nk){
 
     if(g == 2) {
-      G[l, k, , g] = dnorm(psi  - cnetw * psi[k] - csort * alpha[l] - sort_bias, sd = csig)
+      G[l, k, , g] = dnorm(psi_mean  - cnetw * psi_mean[k] - csort * alpha_mean[l] - sort_gap, sd = csig)
     } else {
-      G[l, k, ,g] = dnorm(psi - cnetw * psi[k] - csort * alpha[l], sd = csig)
+      G[l, k, ,g] = dnorm(psi_mean - cnetw * psi_mean[k] - csort * alpha_mean[l], sd = csig)
     }
     # normalize to get transition matrix
     G[l, k, , g] = G[l, k, , g]/sum(G[l, k, , g])
   }
 
-  # normalizing the fixed effects
-  psi = psi - min(psi)
-  alpha = alpha - min(alpha)
+  # Steady State Matrix
+  #-------------------------------------------------------------------------------------------------
 
   # we then solve for the stationary distribution over psis for each alpha value
   H = array(1/nk,c(nl,nk, ng)) # make a initial matrix for L x K
@@ -91,50 +90,92 @@ simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000,
     wireframe(H,aspect = c(1,1),xlab = "worker",ylab="firm")
   }
 
-
   # we simulate a panel
   network    = array(0,c(ni,nt))
   spellcount = array(0,c(ni,nt))
+  age        = array(0,c(ni,nt))
+  experience = array(0,c(ni,nt))
 
-  # worker matrix (worker type, gender, experience, age)
-  A = array(0,c(ni, 4))
+  # age where we start education
+  start_age = 6
+
+  # time invariante worker matrix (worker type, gender, education)
+  A = array(0,c(ni, 3))
 
   for (i in 1:ni) {
+
     # we draw the worker type
     l = sample.int(nl,1)
     # we draw the gender type
-    g = ifelse(runif(1) >= g_ratio, 1, 2)
-    # we draw the initial experience level
-    e = sample.int(nexp,1)
-    # we draw the initial worker age
-    a  = sample.int(65-18,1) + 18
-    # We build the matrix A
-    A[i,] = c(l, g, e, a)
+    g = ifelse(runif(1) >= ratiog, 1, 2)
+    # we draw the education level
+    e = round(rbeta(1, 3, 2,) * neduc)
 
-    # at time 1, we draw from H
+    # We build the matrix A
+    A[i,] = c(l, g, e)
+
+    # at time 1, we draw from H, set other initial paramemters
+
+    # network matrix -----------------------------------------------------------
     network[i,1] = sample.int(nk,1,prob = H[l, , g])
+
+    # age matrix ---------------------------------------------------------------
+    # drawing the age
+    if((e + start_age) < 18) {
+      # Generate age pyramid that follows an exponential distribution
+      p_age = dexp(seq_along(18:65), rate = 0.05)
+      p_age = p_age/sum(p_age)
+      age[i,1] = sample(18:65, 1, prob = p_age)
+    } else {
+      # Generate age pyramid that follows an exponential distribution
+      p_age = dexp(seq_along((e + start_age):65), rate = 0.05)
+      p_age = p_age/sum(p_age)
+      age[i,1] = sample((e + start_age):65, 1, prob = p_age)
+    }
+
+    # experience matrix ---------------------------------------------------------
+    # start by allowing xp to be the difference between age and education
+    experience[i,1] = age[i,1] - e - start_age
+
+    # spellcount and network matrix ---------------------------------------------
     for (t in 2:nt) {
       if (runif(1)<lambda) {
-        network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1],])
-        spellcount[i,t] = spellcount[i,t-1] +1
+        network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
+        spellcount[i,t] = spellcount[i,t-1] + 1
+        # reset experience
+        experience[i,t] = 0
       } else {
         network[i,t]    = network[i,t-1]
         spellcount[i,t] = spellcount[i,t-1]
+        experience[i,t] = experience[i,t-1] + 1
       }
+      age[i,t] = age[i,t-1] + 1
     }
+
   }
 
-	data = data.table(melt(network, c('i', 't')))
+  # Creating the dataset
+  #-------------------------------------------------------------------------------------------------
+
+	data  = data.table(melt(network, c('i', 't')))
 	data2 = data.table(melt(spellcount, c('i', 't')))
+  data3 = data.table(melt(age, c('i', 't')))
+  data4 = data.table(melt(experience, c('i', 't')))
+
 	setnames(data, "value", "k")
 
+  # Code directly from the loop
 	data[, spell := data2$value]
-	data[, l := A[i], i]
-  data[, g := A[i,2], i]
-  data[, xp := A[i,3], i]
-  data[, age := A[i,4], i]
-	data[, alpha := alpha[l], l]
-	data[, psi := psi[k], k]
+  data[, age := data3$value]
+  data[, experience := data4$value]
+
+  # worker, education level and gender
+  data[, l := A[i,1], i]
+  data[, gender := A[i,2], i]
+  data[, educ := A[i,3], i]
+
+  # generating firm ids
+  #-------------------------------------------------------------------------------------------------
 
   last_max_fid = 0
   f_class_count = ni/(fsize*nk*nt) # number of firm classes
@@ -155,52 +196,140 @@ simlabormarket <- function(nk = 6, g_ratio = 0.45, nl = 10, nt = 4, ni = 100000,
     
   data[, fid := dspell[data, fid]]
 
+  # generating random effects
+  #-------------------------------------------------------------------------------------------------
+  
+  # bargaining gap
+  barg_gap = 0.9
+
+  # match matrix with bargaining gap across gender
+  match = array(0,c(nl,nk, ng))
+  match[,,1] = alpha_mean %*% t(psi_mean)
+  match[,,2] = match[,,1] * barg_gap # bargaining gap
+
+  # random effects (we modify here for match effects and firm effects -  time invariant for now)
+  # I draw from a normal distribution and allow match effects to also have different sds
+  data[, psi := rnorm(.N, psi_mean[k], sd = 0.5), by = .(k)]
+	data[, alpha  := rnorm(.N, match[l,k,gender], sd = abs(alpha_sd[l])), by = .(k,l,gender)]
+
+  # as a final step, I shift the entire effects to have a positive minimum
+  # For alpha
+  min_alpha = min(data$alpha)
+  if(min_alpha < 0) {
+      data[, alpha := alpha - min_alpha + 0.01]
+  }
+
+  # For psi
+  min_psi = min(data$psi)
+  if(min_psi < 0) {
+      data[, psi := psi - min_psi + 0.01]
+  }
+
+  data = data[, .(i, l, k, t, fid, spell, gender, age, educ, experience, psi, alpha)]
+  data$g = data$g - 1
+
   # Final wrangling for data creation
   #-------------------------------------------------------------------------------------------------
 
-  #data[, age := sample(18:65,.N,replace=TRUE)]
-  data[, lw  := alpha + psi + w_sigma * rnorm(.N) ]
-  data[, lw  := lw - min(lw) + 0.1]
+  # year shock dummies
+  shocks = runif(nt, -0.01, 0.05)
+  data[, time_fe := shocks[t]]
+
+  data[, lw  := 0.07 * educ + 0.02 * experience - 0.0005 * experience^2 + 
+                  alpha + psi + time_fe + w_sigma * rnorm(.N)]
+
+  # Creating the labor market simulator type of class
+  #-------------------------------------------------------------------------------------------------
+
+  # Define the class
+  setClass("labor market",
+    representation(
+      panel = "data.table",
+      init.params = "list", 
+      tranM = "array",
+      steadyM = "array",
+      alpha_mean = "numeric",
+      psi_mean = "numeric",
+      psi_sd = "numeric",
+      alpha_sd = "numeric",
+      csort = "numeric",
+      cnetw = "numeric",
+      csig = "numeric",
+      fsize = "numeric",
+      w_sigma = "numeric",
+      neduc = "numeric",
+      sort_gap = "numeric",
+      shocks = "numeric"
+    )
+  )
+
+  # Define the constructor
+  create_labor_m = function(panel, init.params, tranM, steadyM, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks) {
+      new("labor market", 
+          panel = panel,
+          init.params = init.params,
+          tranM = tranM,
+          steadyM = steadyM,
+          alpha_mean = alpha_mean,
+          psi_mean = psi_mean,
+          psi_sd = psi_sd,
+          alpha_sd = alpha_sd,
+          csort = csort,
+          cnetw = cnetw,
+          csig = csig,
+          fsize = fsize,
+          w_sigma = w_sigma,
+          neduc = neduc,
+          sort_gap = sort_gap,
+          shocks = shocks
+      )
+  }
 
 
-	format_number <- function(n) {
-		# Define thresholds
-		billion <- 1e9
-		million <- 1e6
-		thousand <- 1e3
-		
-		# Check and format accordingly
-		if (n >= billion) {
-			return(paste0(round(n/billion, 1), "G"))
-		} else if (n >= million) {
-			if (n %% million == 0) {
-				return(paste0(n/million, "M"))
-			} else {
-				return(paste0("~", round(n/million), "M"))
-			}
-		} else if (n >= thousand) {
-			if (n %% thousand == 0) {
-				return(paste0(n/thousand, "k"))
-			} else {
-				return(paste0("~", round(n/thousand), "k"))
-			}
-		} else {
-			return(as.character(n))
-		}
-	}
+  # create the instance of the class
+  lmarket = create_labor_m(data, list(nk = nk, ratiog = ratiog, lambda = lambda, nl = nl, nt = nt, ni = ni, pl = pl), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
 
-  
-	cat(blue("\nLabor Market Simulated."), red("Features: \n"))
-	cat(green("-------------------------------------------------\n\n"))
-	cat("Types of Firms: ", nk, "\n")
-	cat("Types of Workers: ", nl, "\n")
-	cat("Time Periods: ", nt, "\n")
-	cat("Number of Individuals: ", format_number(ni), "\n")
-	cat("Number of Firms: ", length(unique(data$fid)), "\n")
-	cat("Total Observations: ", format_number(ni*nt), "\n")
-	cat(green("-------------------------------------------------\n\n"))
-	cat("First Rows: \n")
-	print(head(data))
+  setMethod("show", "labor market",
+    function(object) {
+      cat(yellow("                         .=\"=.\n",
+                "                      _/.-.-.\\_     _\n",
+                "                     ( ( o o ) )    ))\n",
+                "                      |/  \"  \\|    //\n",
+                "     .-------.        \\`---\\'/    //\n",
+                "    _|~~ ~~  |_       /\\`\"\"\"\\`\\  ((\n",
+                "  =(_|_______|_)=    / /_,_\\ \\ \\ \\\\ \n",
+                "    |:::::::::|      \\_\\_\\'__/ \\  ))\n",
+                "    |:::::::[]|       /`  /`~\\  |//\n",
+                "    |o=======.|      /   /    \\  / \n",
+                "   \\\`\"\"\"\"\"\"\"\"\\\`  ,--\`,--\'\\/\\    / \n",
+                "                  '-- \"--'  '--'\"\n"))
 
-	return(data)
+      cat(blue("\nA simulated labor market with the following "), red("features: \n\n"))
+      cat(green("-------------------------------------------------\n"))
+      cat("Types of Firms: ", nk, "\n")
+      cat("Types of Workers: ", nl, "\n")
+      cat("Time Periods: ", nt, "\n")
+      cat("Number of Individuals: ", ni, "\n")
+      cat("Average Firm Effect: ", mean(object@panel$psi), "\n")
+      cat("Average Match Effect: ", mean(object@panel$alpha), "\n")
+      cat("Average Wage: ", mean(object@panel$lw), "\n")
+      cat("Average Age: ", mean(object@panel$age), "\n")
+      cat("Average Experience: ", mean(object@panel$experience), "\n")
+      cat("Average Education: ", mean(object@panel$educ), "\n")
+      cat("Total Observations: ", ni*nt, "\n")
+      cat(green("-------------------------------------------------\n\n"))
+      cat("First Rows: \n")
+      print(head(object@panel, n = 3))
+      cat("Last Rows: \n")
+      print(tail(object@panel, n = 3))
+    }
+  )
+
+
+
+  # Return the object
+	return(lmarket)
+
 }
+
+simlabormarket()
