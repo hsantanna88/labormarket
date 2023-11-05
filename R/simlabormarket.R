@@ -25,7 +25,7 @@
 #' @importFrom reshape2 melt
 #' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
 #'
-#' @export
+#' @export labor market
 #'
 #' @examples
 #' # To create a default labor market simulation:
