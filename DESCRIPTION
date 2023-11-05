@@ -1,9 +1,9 @@
-Package: lmbias
-Title: Limited Mobility Bias Correction
+Package: labormarket
+Title: Tools for Learning How Labor Markets Work
 Version: 0.0.0.2001
 Authors@R: 
-    person("Hugo", "Sant'Anna", , "hsantanna@uga.edu", role = c("aut", "cre"))
-Description: Corrects limited mobility bias in worker-firm matched datasets using Azkarate-Askasua and Zerecero (2022) (https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4322300)
+    person("Hugo", "Sant'Anna", email = "hsantanna@uga.edu", role = c("aut", "cre"))
+Description: A collection of econometric tools made for the exploration of worker-firm matched datasets. It aims to simplify complex concepts, and serves as an invaluable ally for both undergraduates and graduates in navigating labor economics research.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -22,5 +22,5 @@ Imports:
     fixest,
     Matrix,
     boot
-URL: https://github.com/hsantanna88/lmbias
-BugReports: https://github.com/hsantanna88/lmbias/issues
+URL: https://github.com/hsantanna88/labormarket
+BugReports: https://github.com/hsantanna88/labormarket/issues

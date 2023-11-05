@@ -1,2 +1,2 @@
-# lmbias - Limited Mobility Bias Correction for Employer-Employee Matched Dataset
-Limited Mobility Bias Correction for employer-employee matched dataset, leveraging the fast fixed effect models from the fixest package and the Azkarate-Askasua and Zerecero bootstrapping method (http://dx.doi.org/10.2139/ssrn.4322300). More analysis coming soon.
+# labormarket - Tools for Learning How Labor Markets Work
+A collection of econometric tools made for the exploration of worker-firm matched datasets. It aims to simplify complex concepts, and serves as an invaluable ally for both undergraduates and graduates in navigating labor economics research.

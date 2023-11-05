@@ -18,10 +18,7 @@
 #' @slot neduc Number of education levels.
 #' @slot sort_gap Sorting gap.
 #' @slot shocks Shocks parameter.
-#' @import data.table data.table
-#' @importFrom methods setClass
-#' @export LaborMarket
-#' 
+
 setClass("LaborMarket",
   representation(
     panel = "data.table",

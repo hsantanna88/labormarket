@@ -13,8 +13,9 @@
 #' @param ni Number of individuals.
 #' @param pl Boolean to plot the transition matrix and the steady-state matrix.
 #' @return an object representing the labor market with the following features.
-#'
-#' @import data.table
+#' 
+#' @importFrom reshape2 melt
+#' @importFrom data.table data.table
 #' @import lattice
 #' @import gridExtra
 #' @import ggplot2
@@ -22,7 +23,6 @@
 #' @import feather
 #' @import methods
 #' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
-#' @importFrom reshape2 melt
 #' @export simlabormarket
 #'
 #' @examples
