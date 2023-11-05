@@ -14,25 +14,22 @@
 #' @param pl Boolean to plot the transition matrix and the steady-state matrix.
 #' @return an object representing the labor market with the following features.
 #'
+#' @import data.table
 #' @import lattice
 #' @import gridExtra
 #' @import ggplot2
 #' @import futile.logger
 #' @import feather
-#' @import crayon
 #' @import methods
-#' @import data.table
-#' @importFrom reshape2 melt
 #' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
-#'
-#' @export labormarket
+#' @importFrom reshape2 melt
+#' @export simlabormarket
 #'
 #' @examples
 #' # To create a default labor market simulation:
 #' labormarket <- simlabormarket(nk = 5, ratiog = 0.5, lambda = 0.1,
 #'                               nl = 3, nt = 10, ni = 100, pl = TRUE)
 #'
-
 
 simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
 
@@ -258,31 +255,9 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # Creating the labor market simulator type of class
   #-------------------------------------------------------------------------------------------------
 
-  # Define the class
-  setClass("labormarket",
-    representation(
-      panel = "data.table",
-      init.params = "list", 
-      tranM = "array",
-      steadyM = "array",
-      alpha_mean = "numeric",
-      psi_mean = "numeric",
-      psi_sd = "numeric",
-      alpha_sd = "numeric",
-      csort = "numeric",
-      cnetw = "numeric",
-      csig = "numeric",
-      fsize = "numeric",
-      w_sigma = "numeric",
-      neduc = "numeric",
-      sort_gap = "numeric",
-      shocks = "numeric"
-    )
-  )
-
   # Define the constructor
   create_labor_m = function(panel, init.params, tranM, steadyM, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks) {
-      new("labormarket", 
+      new("LaborMarket", 
           panel = panel,
           init.params = init.params,
           tranM = tranM,
@@ -306,7 +281,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # create the instance of the class
   lmarket = create_labor_m(data, list(nk = nk, ratiog = ratiog, lambda = lambda, nl = nl, nt = nt, ni = ni, pl = pl), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
 
-  setMethod("show", "labormarket",
+  setMethod("show", "LaborMarket",
     function(object) {
       cat(yellow("                         .=\"=.\n",
                 "                      _/.-.-.\\_     _\n",
@@ -348,5 +323,3 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
 	return(lmarket)
 
 }
-
-simlabormarket()

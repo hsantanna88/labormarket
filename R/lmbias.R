@@ -28,7 +28,7 @@
 #' @importFrom boot boot
 #' @importFrom lfe compfactor
 #' @import fixest
-#' @export
+#' @export lmbias
 #' 
 #' @examples 
 #' # Assuming example data and model exist:

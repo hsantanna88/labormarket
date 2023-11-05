@@ -1,6 +1,6 @@
 Package: lmbias
 Title: Limited Mobility Bias Correction
-Version: 0.0.0.2000
+Version: 0.0.0.2001
 Authors@R: 
     person("Hugo", "Sant'Anna", , "hsantanna@uga.edu", role = c("aut", "cre"))
 Description: Corrects limited mobility bias in worker-firm matched datasets using Azkarate-Askasua and Zerecero (2022) (https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4322300)
@@ -9,6 +9,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
+    data.table,
     futile.logger,
     feather,
     crayon,
@@ -16,7 +17,6 @@ Imports:
     ggplot2,
     gridExtra,
     lattice,
-    data.table,
     reshape2,
     lfe,
     fixest,
