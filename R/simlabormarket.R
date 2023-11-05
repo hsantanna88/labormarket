@@ -15,7 +15,7 @@
 #' @return an object representing the labor market with the following features.
 #' 
 #' @importFrom reshape2 melt
-#' @importFrom data.table data.table
+#' @importFrom data.table data.table setnames
 #' @import lattice
 #' @import gridExtra
 #' @import ggplot2
