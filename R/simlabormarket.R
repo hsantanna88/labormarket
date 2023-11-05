@@ -25,7 +25,7 @@
 #' @importFrom reshape2 melt
 #' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
 #'
-#' @export labor market
+#' @export labormarket
 #'
 #' @examples
 #' # To create a default labor market simulation:
@@ -259,7 +259,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   #-------------------------------------------------------------------------------------------------
 
   # Define the class
-  setClass("labor market",
+  setClass("labormarket",
     representation(
       panel = "data.table",
       init.params = "list", 
@@ -282,7 +282,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
 
   # Define the constructor
   create_labor_m = function(panel, init.params, tranM, steadyM, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks) {
-      new("labor market", 
+      new("labormarket", 
           panel = panel,
           init.params = init.params,
           tranM = tranM,
@@ -306,7 +306,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # create the instance of the class
   lmarket = create_labor_m(data, list(nk = nk, ratiog = ratiog, lambda = lambda, nl = nl, nt = nt, ni = ni, pl = pl), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
 
-  setMethod("show", "labor market",
+  setMethod("show", "labormarket",
     function(object) {
       cat(yellow("                         .=\"=.\n",
                 "                      _/.-.-.\\_     _\n",

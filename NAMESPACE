@@ -2,7 +2,7 @@
 
 export(lmbias)
 export(simlabormarket)
-exportClass(labor market)
+exportClass(labormarket)
 import(Matrix)
 import(crayon)
 import(data.table)
