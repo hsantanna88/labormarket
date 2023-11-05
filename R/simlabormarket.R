@@ -281,44 +281,6 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # create the instance of the class
   lmarket = create_labor_m(data, list(nk = nk, ratiog = ratiog, lambda = lambda, nl = nl, nt = nt, ni = ni, pl = pl), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
 
-  setMethod("show", "LaborMarket",
-    function(object) {
-      cat(yellow("                         .=\"=.\n",
-                "                      _/.-.-.\\_     _\n",
-                "                     ( ( o o ) )    ))\n",
-                "                      |/  \"  \\|    //\n",
-                "     .-------.        \\`---\\'/    //\n",
-                "    _|~~ ~~  |_       /\\`\"\"\"\\`\\  ((\n",
-                "  =(_|_______|_)=    / /_,_\\ \\ \\ \\\\ \n",
-                "    |:::::::::|      \\_\\_\\'__/ \\  ))\n",
-                "    |:::::::[]|       /`  /`~\\  |//\n",
-                "    |o=======.|      /   /    \\  / \n",
-                "   \\\`\"\"\"\"\"\"\"\"\\\`  ,--\`,--\'\\/\\    / \n",
-                "                  '-- \"--'  '--'\"\n"))
-
-      cat(blue("\nA simulated labor market with the following "), red("features: \n\n"))
-      cat(green("-------------------------------------------------\n"))
-      cat("Types of Firms: ", nk, "\n")
-      cat("Types of Workers: ", nl, "\n")
-      cat("Time Periods: ", nt, "\n")
-      cat("Number of Individuals: ", ni, "\n")
-      cat("Average Firm Effect: ", mean(object@panel$psi), "\n")
-      cat("Average Match Effect: ", mean(object@panel$alpha), "\n")
-      cat("Average Wage: ", mean(object@panel$lw), "\n")
-      cat("Average Age: ", mean(object@panel$age), "\n")
-      cat("Average Experience: ", mean(object@panel$experience), "\n")
-      cat("Average Education: ", mean(object@panel$educ), "\n")
-      cat("Total Observations: ", ni*nt, "\n")
-      cat(green("-------------------------------------------------\n\n"))
-      cat("First Rows: \n")
-      print(head(object@panel, n = 3))
-      cat("Last Rows: \n")
-      print(tail(object@panel, n = 3))
-    }
-  )
-
-
-
   # Return the object
 	return(lmarket)
 
