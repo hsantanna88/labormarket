@@ -3,7 +3,7 @@
 #' A class to represent the state of a labor market including parameters and data.
 #'
 #' @slot panel A data.table object representing panel data.
-#' @slot init.params A list of initial parameters.
+#' @slot init.params Initial parameters list.
 #' @slot tranM An array representing transition matrices.
 #' @slot steadyM An array representing steady-state matrices.
 #' @slot alpha_mean Mean of the alpha parameter.
@@ -58,17 +58,18 @@ setMethod("show", "LaborMarket",
 
     cat(blue("\nA simulated labor market with the following "), red("features: \n\n"))
     cat(green("-------------------------------------------------\n"))
-    cat("Types of Firms: ", nk, "\n")
-    cat("Types of Workers: ", nl, "\n")
-    cat("Time Periods: ", nt, "\n")
-    cat("Number of Individuals: ", ni, "\n")
+    cat("Types of Firms: ", object@init.params$nk, "\n")
+    cat("Types of Workers: ", object@init.params$nl, "\n")
+    cat("Time Periods: ", object@init.params$nt, "\n")
+    cat("Number of Individuals: ", object@init.params$ni, "\n")
+    cat("Female Ratio: ", object@init.params$ratiog, "\n")
     cat("Average Firm Effect: ", mean(object@panel$psi), "\n")
     cat("Average Match Effect: ", mean(object@panel$alpha), "\n")
     cat("Average Wage: ", mean(object@panel$lw), "\n")
     cat("Average Age: ", mean(object@panel$age), "\n")
     cat("Average Experience: ", mean(object@panel$experience), "\n")
     cat("Average Education: ", mean(object@panel$educ), "\n")
-    cat("Total Observations: ", ni*nt, "\n")
+    cat("Total Observations: ", (object@init.params$nt)*(object@init.params$ni), "\n")
     cat(green("-------------------------------------------------\n\n"))
     cat("First Rows: \n")
     print(head(object@panel, n = 3))

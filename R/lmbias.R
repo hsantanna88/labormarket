@@ -110,8 +110,6 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000,
     #phi <- sqrt(resid(femodel)^2 / (1 - diag(cbind(Xcovar, X1, X2) %*% solve(crossprod(cbind(Xcovar, X1, X2)), t(cbind(Xcovar, X1, X2))))))
   #}
 
-
-
   # Clustering method
   calculate_bias <- function(data = data, indices, phi, nobs, lhs, nfe1,
                               nfe2, ncovar, X1, X2,

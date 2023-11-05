@@ -10,8 +10,7 @@ simlabormarket(
   lambda = 0.05,
   nl = 10,
   nt = 4,
-  ni = 1e+05,
-  pl = FALSE
+  ni = 1e+05
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ simlabormarket(
 \item{nt}{Number of time periods.}
 
 \item{ni}{Number of individuals.}
-
-\item{pl}{Boolean to plot the transition matrix and the steady-state matrix.}
 }
 \value{
 an object representing the labor market with the following features.
@@ -41,6 +38,6 @@ matrices if requested.
 \examples{
 # To create a default labor market simulation:
 labormarket <- simlabormarket(nk = 5, ratiog = 0.5, lambda = 0.1,
-                              nl = 3, nt = 10, ni = 100, pl = TRUE)
+                              nl = 3, nt = 10, ni = 100)
 
 }

@@ -11,7 +11,6 @@
 #' @param nl Number of worker types or clusters.
 #' @param nt Number of time periods.
 #' @param ni Number of individuals.
-#' @param pl Boolean to plot the transition matrix and the steady-state matrix.
 #' @return an object representing the labor market with the following features.
 #' 
 #' @importFrom reshape2 melt
@@ -29,10 +28,10 @@
 #' @examples
 #' # To create a default labor market simulation:
 #' labormarket <- simlabormarket(nk = 5, ratiog = 0.5, lambda = 0.1,
-#'                               nl = 3, nt = 10, ni = 100, pl = TRUE)
+#'                               nl = 3, nt = 10, ni = 100)
 #'
 
-simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
+simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000) {
 
   # Labor Market Inner Parameters
   #-------------------------------------------------------------------------------------------------
@@ -94,15 +93,6 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   H = array(1/nk,c(nl,nk, ng)) # make a initial matrix for L x K
   for (g in 1:2) for (l in 1:nl) for (i in 1:100) {
     H[l, ,g] = t(G[l, , ,g]) %*% H[l, ,g]
-  }
-
-  # plotting the transition matrix and the steady-state matrix
-  if(pl) {
-    Plot1 = wireframe(G[1,,],aspect = c(1,1),xlab = "previous firm",ylab="next firm")
-    Plot2 = wireframe(G[nl,,],aspect = c(1,1),xlab = "previous firm",ylab="next firm")
-    grid.arrange(Plot1, Plot2,nrow=1)
-
-    wireframe(H,aspect = c(1,1),xlab = "worker",ylab="firm")
   }
 
   # we simulate a panel
@@ -278,11 +268,11 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
       )
   }
 
-
   # create the instance of the class
-  lmarket = create_labor_m(data, list(nk = nk, ratiog = ratiog, lambda = lambda, nl = nl, nt = nt, ni = ni, pl = pl), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
+  lmarket = create_labor_m(data, list(nk = nk, nl = nl, nt = nt, ni = ni, ratiog = ratiog, lambda = lambda), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
 
-  # Return the object
-	return(lmarket)
+  # output the class
+  print(lmarket)
+  invisible(lmarket)
 
 }

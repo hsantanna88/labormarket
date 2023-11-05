@@ -12,7 +12,7 @@ A class to represent the state of a labor market including parameters and data.
 \describe{
 \item{\code{panel}}{A data.table object representing panel data.}
 
-\item{\code{init.params}}{A list of initial parameters.}
+\item{\code{init.params}}{Initial parameters list.}
 
 \item{\code{tranM}}{An array representing transition matrices.}
 
