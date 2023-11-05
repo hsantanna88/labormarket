@@ -19,6 +19,7 @@
 #' @import lattice
 #' @import gridExtra
 #' @import ggplot2
+#' @importFrom crayon blue green red yellow
 #' @import futile.logger
 #' @import feather
 #' @import methods
