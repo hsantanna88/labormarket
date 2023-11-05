@@ -40,8 +40,8 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000,
                     parallel = c("no", "multicore", "snow"), cluster =  NULL,
                     ncpus = getOption("boot.ncpus", 1L), cl = NULL) {
 
-  # Checking if the variables are correct
-  if(class(femodel) != "fixest") {
+# Checking if the variables are correct
+  if (!inherits(femodel, "fixest")) {
     stop("The model must be a feols object")
   }
 

@@ -1,20 +1,37 @@
-#' Simulating Employer-Employee Matched Dataset
+#' A Function that simulates a labor market with gender bias.
 #'
-#' This code is inspired by https://floswald.github.io/ScPo-Labor/lab-akm.html
+#' This function creates a simulated labor market with parameters that control
+#' the number of firm types, the fraction of females in the labor market,
+#' percentage of movers, etc. It can also plot the transition and steady-state
+#' matrices if requested.
 #'
-library(data.table)
-library(reshape)
-library(lattice)
-library(gridExtra)
-library(ggplot2)
-library(futile.logger)
-library(feather)
-library(crayon)
-library(methods)
-
-
-# Time to create a labor market with men and women, different ages and experience level.
-
+#' @param nk Number of firm types or clusters.
+#' @param ratiog Fraction of females in the labor market.
+#' @param lambda Percentage of movers.
+#' @param nl Number of worker types or clusters.
+#' @param nt Number of time periods.
+#' @param ni Number of individuals.
+#' @param pl Boolean to plot the transition matrix and the steady-state matrix.
+#' @return an object representing the labor market with the following features.
+#'
+#' @import lattice
+#' @import gridExtra
+#' @import ggplot2
+#' @import futile.logger
+#' @import feather
+#' @import crayon
+#' @import methods
+#' @import data.table
+#' @importFrom reshape2 melt
+#' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
+#'
+#' @export
+#'
+#' @examples
+#' # To create a default labor market simulation:
+#' labormarket <- simlabormarket(nk = 5, ratiog = 0.5, lambda = 0.1,
+#'                               nl = 3, nt = 10, ni = 100, pl = TRUE)
+#'
 
 
 simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, pl = FALSE) {
@@ -205,7 +222,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # match matrix with bargaining gap across gender
   match = array(0,c(nl,nk, ng))
   match[,,1] = alpha_mean %*% t(psi_mean)
-  match[,,2] = match[,,1] * barg_gap # bargaining gap
+  match[,,2] = match[,,1] * barg_gap # Bargaining power heterogeneity. 
 
   # random effects (we modify here for match effects and firm effects -  time invariant for now)
   # I draw from a normal distribution and allow match effects to also have different sds
