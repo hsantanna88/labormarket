@@ -71,10 +71,6 @@ setMethod("show", "LaborMarket",
     cat("Average Education: ", mean(object@panel$educ), "\n")
     cat("Total Observations: ", (object@init.params$nt)*(object@init.params$ni), "\n")
     cat(green("-------------------------------------------------\n\n"))
-    cat("First Rows: \n")
-    print(head(object@panel, n = 3))
-    cat("Last Rows: \n")
-    print(tail(object@panel, n = 3))
   }
 )
 
