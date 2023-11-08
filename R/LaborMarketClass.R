@@ -43,6 +43,7 @@ setClass("LaborMarket",
 
 setMethod("show", "LaborMarket",
   function(object) {
+    options(scipen = 999)
     cat(yellow("                         .=\"=.\n",
               "                      _/.-.-.\\_     _\n",
               "                     ( ( o o ) )    ))\n",
@@ -63,14 +64,15 @@ setMethod("show", "LaborMarket",
     cat("Time Periods: ", object@init.params$nt, "\n")
     cat("Number of Individuals: ", object@init.params$ni, "\n")
     cat("Female Ratio: ", object@init.params$ratiog, "\n")
-    cat("Average Firm Effect: ", mean(object@panel$psi), "\n")
-    cat("Average Match Effect: ", mean(object@panel$alpha), "\n")
-    cat("Average Wage: ", mean(object@panel$lw), "\n")
-    cat("Average Age: ", mean(object@panel$age), "\n")
-    cat("Average Experience: ", mean(object@panel$experience), "\n")
-    cat("Average Education: ", mean(object@panel$educ), "\n")
+    cat("Average Firm Effect: ", round(mean(object@panel$psi), 2), "\n")
+    cat("Average Match Effect: ", round(mean(object@panel$alpha), 2), "\n")
+    cat("Average Wage: ", round(mean(object@panel$lw), 2), "\n")
+    cat("Average Age: ", round(mean(object@panel$age), 2), "\n")
+    cat("Average Experience: ", round(mean(object@panel$experience), 2), "\n")
+    cat("Average Education: ", round(mean(object@panel$educ), 2), "\n")
     cat("Total Observations: ", (object@init.params$nt)*(object@init.params$ni), "\n")
     cat(green("-------------------------------------------------\n\n"))
+    options(scipen = 0)
   }
 )
 

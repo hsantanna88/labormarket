@@ -36,14 +36,14 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # Labor Market Inner Parameters
   #-------------------------------------------------------------------------------------------------
 
-  # match seed standard deviation
-  alpha_sd = 1
+  # alpha specific sd (mixture model)
+  alpha_sd = rnorm(nl)
   # firm fixed effect standard deviation
   psi_sd = 1
   # Drawing the random effects averages for firms
   psi_mean = qnorm(1:nk/(nk+1)) * psi_sd
   # Drawing the match effects seeds for individuals
-  alpha_mean = qnorm(1:nl/(nl+1)) * alpha_sd
+  alpha_mean = qnorm(1:nl/(nl+1))
 
   # sorting effect
   csort = 0.5
@@ -57,8 +57,6 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   w_sigma = 0.5
   # maximum years of education
   neduc = 24
-  # modifying the sd to be alpha specific (useful later for matching effects)
-  alpha_sd = rnorm(nl)
 
 
   # Matrix Building
@@ -95,6 +93,38 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
     H[l, ,g] = t(G[l, , ,g]) %*% H[l, ,g]
   }
 
+  # creating the education matrix
+  #-------------------------------------------------------------------------------------------------
+
+  # generating the matrix
+  educ_prob = matrix(0, nrow = nl, ncol = neduc)
+
+  # Parameters for the beta distribution for the extreme types
+  alpha_low = 2  # Lower alpha for lower education (type 1)
+  beta_high = 1.5    # Higher beta for lower education (type 1)
+  alpha_high = 2.5   # Higher alpha for higher education (type 10)
+  beta_low = 1   # Lower beta for higher education (type 10)
+
+  # generating quantiles
+  quantiles <- seq(1/(2*neduc), 1 - 1/(2*neduc), length.out = neduc)
+
+  # Interpolating alpha and beta parameters for the types
+  alphas = seq(alpha_low, alpha_high, length.out = nl)
+  betas = seq(beta_high, beta_low, length.out = nl)
+
+
+  # populating the matrix
+  for (l in 1:nl) {
+
+    # Generate probabilities for each education year for the individual type
+    probs = dbeta(quantiles, alphas[l], betas[l])
+    educ_prob[l,] = probs
+  
+  }
+
+  # normalizing the matrix rowwise
+  educ_prob = educ_prob/rowSums(educ_prob)
+
   # we simulate a panel
   network    = array(0,c(ni,nt))
   spellcount = array(0,c(ni,nt))
@@ -113,26 +143,30 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
     l = sample.int(nl,1)
     # we draw the gender type
     g = ifelse(runif(1) >= ratiog, 1, 2)
-    # we draw the education level
-    e = round(rbeta(1, 3, 2,) * neduc)
-
+    # Get the probability weights for education
+    prob_educ = educ_prob[l, ]
+    # we draw the education based on worker type
+    e = sample(x = 1:ncol(educ_prob), size = 1, prob = prob_educ)
+    
     # We build the matrix A
     A[i,] = c(l, g, e)
 
     # at time 1, we draw from H, set other initial paramemters
+    # network matrix stands for the "history" of worker jobs
 
     # network matrix -----------------------------------------------------------
     network[i,1] = sample.int(nk,1,prob = H[l, , g])
 
     # age matrix ---------------------------------------------------------------
     # drawing the age
+    # Generate age pyramid that follows an exponential distribution
+
     if((e + start_age) < 18) {
-      # Generate age pyramid that follows an exponential distribution
+      # I don't want individuals younger than 18
       p_age = dexp(seq_along(18:65), rate = 0.05)
       p_age = p_age/sum(p_age)
       age[i,1] = sample(18:65, 1, prob = p_age)
     } else {
-      # Generate age pyramid that follows an exponential distribution
       p_age = dexp(seq_along((e + start_age):65), rate = 0.05)
       p_age = p_age/sum(p_age)
       age[i,1] = sample((e + start_age):65, 1, prob = p_age)
@@ -142,7 +176,7 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
     # start by allowing xp to be the difference between age and education
     experience[i,1] = age[i,1] - e - start_age
 
-    # spellcount and network matrix ---------------------------------------------
+    # updating spellcount and network matrix ------------------------------------
     for (t in 2:nt) {
       if (runif(1)<lambda) {
         network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
@@ -231,12 +265,13 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   }
 
   data = data[, .(i, l, k, t, fid, spell, gender, age, educ, experience, psi, alpha)]
-  data$g = data$g - 1
+  # female is 1, male is 0 (making the var binary)
+  data$gender = data$gender - 1
 
   # Final wrangling for data creation
   #-------------------------------------------------------------------------------------------------
 
-  # year shock dummies
+  # year shock dummies, just an uniform distribution. For simplicity, my model is static for now
   shocks = runif(nt, -0.01, 0.05)
   data[, time_fe := shocks[t]]
 
