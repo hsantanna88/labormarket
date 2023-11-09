@@ -11,6 +11,7 @@
 #' @param nl Number of worker types or clusters.
 #' @param nt Number of time periods.
 #' @param ni Number of individuals.
+#' @param mincer Logical, if TRUE, the function will generate wages using the mincer equation together with a random effects.
 #' @return an object representing the labor market with the following features.
 #' 
 #' @importFrom reshape2 melt
@@ -31,7 +32,7 @@
 #'                               nl = 3, nt = 10, ni = 100)
 #'
 
-simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000) {
+simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, mincer = FALSE) {
 
   # Labor Market Inner Parameters
   #-------------------------------------------------------------------------------------------------
@@ -275,8 +276,13 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   shocks = runif(nt, -0.01, 0.05)
   data[, time_fe := shocks[t]]
 
-  data[, lw  := 0.07 * educ + 0.02 * experience - 0.0005 * experience^2 + 
+  if (mincer == TRUE) {
+    data[, lw  := 0.07 * educ + 0.02 * experience - 0.0005 * experience^2 + 
                   alpha + psi + time_fe + w_sigma * rnorm(.N)]
+  } else {
+    data[, lw  := alpha + psi + w_sigma * rnorm(.N)]
+  }
+  
 
   # Creating the labor market simulator type of class
   #-------------------------------------------------------------------------------------------------
