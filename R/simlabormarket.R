@@ -140,17 +140,22 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
 
   for (i in 1:ni) {
 
-    # we draw the worker type
-    l = sample.int(nl,1)
     # we draw the gender type
     g = ifelse(runif(1) >= ratiog, 1, 2)
-    # Get the probability weights for education
-    prob_educ = educ_prob[l, ]
-    # we draw the education based on worker type
-    e = sample(x = 1:ncol(educ_prob), size = 1, prob = prob_educ)
-    
-    # We build the matrix A
-    A[i,] = c(l, g, e)
+    # we draw the worker type
+    l = sample.int(nl,1)
+
+    if (mincer == TRUE) {
+      # Get the probability weights for education
+      prob_educ = educ_prob[l, ]
+      # we draw the education based on worker type
+      e = sample(x = 1:ncol(educ_prob), size = 1, prob = prob_educ)
+      
+      # We build the matrix A
+      A[i,] = c(l, g, e)
+    } else {
+      A[i,] = c(l, g, 0)
+    }
 
     # at time 1, we draw from H, set other initial paramemters
     # network matrix stands for the "history" of worker jobs
@@ -158,38 +163,51 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
     # network matrix -----------------------------------------------------------
     network[i,1] = sample.int(nk,1,prob = H[l, , g])
 
-    # age matrix ---------------------------------------------------------------
-    # drawing the age
-    # Generate age pyramid that follows an exponential distribution
+    if(mincer == TRUE) {
+      # age matrix ---------------------------------------------------------------
+      # drawing the age
+      # Generate age pyramid that follows an exponential distribution
 
-    if((e + start_age) < 18) {
-      # I don't want individuals younger than 18
-      p_age = dexp(seq_along(18:65), rate = 0.05)
-      p_age = p_age/sum(p_age)
-      age[i,1] = sample(18:65, 1, prob = p_age)
-    } else {
-      p_age = dexp(seq_along((e + start_age):65), rate = 0.05)
-      p_age = p_age/sum(p_age)
-      age[i,1] = sample((e + start_age):65, 1, prob = p_age)
-    }
-
-    # experience matrix ---------------------------------------------------------
-    # start by allowing xp to be the difference between age and education
-    experience[i,1] = age[i,1] - e - start_age
-
-    # updating spellcount and network matrix ------------------------------------
-    for (t in 2:nt) {
-      if (runif(1)<lambda) {
-        network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
-        spellcount[i,t] = spellcount[i,t-1] + 1
-        # reset experience
-        experience[i,t] = 0
+      if((e + start_age) < 18) {
+        # I don't want individuals younger than 18
+        p_age = dexp(seq_along(18:65), rate = 0.05)
+        p_age = p_age/sum(p_age)
+        age[i,1] = sample(18:65, 1, prob = p_age)
       } else {
-        network[i,t]    = network[i,t-1]
-        spellcount[i,t] = spellcount[i,t-1]
-        experience[i,t] = experience[i,t-1] + 1
+        p_age = dexp(seq_along((e + start_age):65), rate = 0.05)
+        p_age = p_age/sum(p_age)
+        age[i,1] = sample((e + start_age):65, 1, prob = p_age)
       }
-      age[i,t] = age[i,t-1] + 1
+
+      # experience matrix ---------------------------------------------------------
+      # start by allowing xp to be the difference between age and education
+      experience[i,1] = age[i,1] - e - start_age
+
+      # updating spellcount and network matrix ------------------------------------
+      for (t in 2:nt) {
+        if (runif(1)<lambda) {
+          network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
+          spellcount[i,t] = spellcount[i,t-1] + 1
+          # reset experience
+          experience[i,t] = 0
+        } else {
+          network[i,t]    = network[i,t-1]
+          spellcount[i,t] = spellcount[i,t-1]
+          experience[i,t] = experience[i,t-1] + 1
+        }
+        age[i,t] = age[i,t-1] + 1
+      }
+    } else {
+      # updating spellcount and network matrix ------------------------------------
+      for (t in 2:nt) {
+        if (runif(1)<lambda) {
+          network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
+          spellcount[i,t] = spellcount[i,t-1] + 1
+        } else {
+          network[i,t]    = network[i,t-1]
+          spellcount[i,t] = spellcount[i,t-1]
+        }
+      }
     }
 
   }
@@ -199,15 +217,19 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
 
 	data  = data.table(melt(network, c('i', 't')))
 	data2 = data.table(melt(spellcount, c('i', 't')))
-  data3 = data.table(melt(age, c('i', 't')))
-  data4 = data.table(melt(experience, c('i', 't')))
+  if (mincer == TRUE) {
+    data3 = data.table(melt(age, c('i', 't')))
+    data4 = data.table(melt(experience, c('i', 't')))
+  }
 
 	setnames(data, "value", "k")
 
   # Code directly from the loop
 	data[, spell := data2$value]
-  data[, age := data3$value]
-  data[, experience := data4$value]
+  if (mincer == TRUE) {
+    data[, age := data3$value]
+    data[, experience := data4$value]
+  }
 
   # worker, education level and gender
   data[, l := A[i,1], i]
@@ -264,8 +286,12 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   if(min_psi < 0) {
       data[, psi := psi - min_psi + 0.01]
   }
+  if(mincer == TRUE) {
+    data = data[, .(i, l, k, t, fid, spell, gender, age, educ, experience, psi, alpha)]
+  } else {
+    data = data[, .(i,l,k,t,fid,spell, gender, psi, alpha)]
+  }
 
-  data = data[, .(i, l, k, t, fid, spell, gender, age, educ, experience, psi, alpha)]
   # female is 1, male is 0 (making the var binary)
   data$gender = data$gender - 1
 
@@ -284,30 +310,38 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   }
   
 
+  # Setting education, age and experience to be zeroes if mincer == FALSE
+  if (mincer == FALSE) {
+    data[, c("educ", "age", "experience") := 0]
+  }
+
   # Creating the labor market simulator type of class
   #-------------------------------------------------------------------------------------------------
 
+
   # Define the constructor
   create_labor_m = function(panel, init.params, tranM, steadyM, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks) {
-      new("LaborMarket", 
-          panel = panel,
-          init.params = init.params,
-          tranM = tranM,
-          steadyM = steadyM,
-          alpha_mean = alpha_mean,
-          psi_mean = psi_mean,
-          psi_sd = psi_sd,
-          alpha_sd = alpha_sd,
-          csort = csort,
-          cnetw = cnetw,
-          csig = csig,
-          fsize = fsize,
-          w_sigma = w_sigma,
-          neduc = neduc,
-          sort_gap = sort_gap,
-          shocks = shocks
-      )
+    new(
+      "LaborMarket", 
+      panel = panel,
+      init.params = init.params,
+      tranM = tranM,
+      steadyM = steadyM,
+      alpha_mean = alpha_mean,
+      psi_mean = psi_mean,
+      psi_sd = psi_sd,
+      alpha_sd = alpha_sd,
+      csort = csort,
+      cnetw = cnetw,
+      csig = csig,
+      fsize = fsize,
+      w_sigma = w_sigma,
+      neduc = neduc,
+      sort_gap = sort_gap,
+      shocks = shocks
+    )
   }
+
 
   # create the instance of the class
   lmarket = create_labor_m(data, list(nk = nk, nl = nl, nt = nt, ni = ni, ratiog = ratiog, lambda = lambda), G, H, alpha_mean, psi_mean, psi_sd, alpha_sd, csort, cnetw, csig, fsize, w_sigma, neduc, sort_gap, shocks)
@@ -315,5 +349,4 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   # output the class
   print(lmarket)
   invisible(lmarket)
-
 }
