@@ -36,7 +36,7 @@
 #' # model <- feols(y ~ x1 + x2 | fe1 + fe2, data = data)
 #' # lmbias(model, data)
 
-lmbias <- function(femodel, data, vcov = "HC1", R = 1000,
+lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
                     parallel = c("no", "multicore", "snow"), cluster =  NULL,
                     ncpus = getOption("boot.ncpus", 1L), cl = NULL) {
 
@@ -94,12 +94,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000,
     )),
     data = data
   )
-  Xcovar <- sparse.model.matrix(
-    formula(paste0("~",
-      paste(names(femodel$coefficients), collapse = " + "), "-1"
-    )),
-    data = data
-  )
+  Xcovar <- sparse.model.matrix(~ get(xvarname) - 1, data = data)
 
   # what type of vcov
   if( vcov == "HC0") {
