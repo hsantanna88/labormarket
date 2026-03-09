@@ -3,43 +3,52 @@
 \docType{class}
 \name{LaborMarket-class}
 \alias{LaborMarket-class}
-\title{S4 Class for Representing a Labor Market}
+\title{S4 Class for Representing a Simulated Labor Market}
 \description{
-A class to represent the state of a labor market including parameters and data.
+A class to represent the state of a simulated labor market including the
+panel data, transition/steady-state matrices, and all generating parameters.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{panel}}{A data.table object representing panel data.}
+\item{\code{panel}}{A \code{data.table} object representing the simulated panel data.}
 
-\item{\code{init.params}}{Initial parameters list.}
+\item{\code{init.params}}{A list of initial parameters (\code{nk}, \code{nl}, \code{nt}, \code{ni}, \code{ratiog}, \code{lambda}).}
 
-\item{\code{tranM}}{An array representing transition matrices.}
+\item{\code{tranM}}{An array representing transition matrices across firm types.}
 
-\item{\code{steadyM}}{An array representing steady-state matrices.}
+\item{\code{steadyM}}{An array representing steady-state distributions.}
 
-\item{\code{alpha_mean}}{Mean of the alpha parameter.}
+\item{\code{alpha_mean}}{Numeric vector of mean worker effects by type.}
 
-\item{\code{psi_mean}}{Mean of the psi parameter.}
+\item{\code{psi_mean}}{Numeric vector of mean firm effects by type.}
 
-\item{\code{psi_sd}}{Standard deviation of the psi parameter.}
+\item{\code{psi_sd}}{Standard deviation of the firm effect distribution.}
 
-\item{\code{alpha_sd}}{Standard deviation of the alpha parameter.}
+\item{\code{alpha_sd}}{Numeric vector of standard deviations for worker effects by type.}
 
-\item{\code{csort}}{Cost of sorting.}
+\item{\code{csort}}{Sorting effect parameter.}
 
-\item{\code{cnetw}}{Cost of networking.}
+\item{\code{cnetw}}{Network effect parameter.}
 
-\item{\code{csig}}{Cost of signalling.}
+\item{\code{csig}}{Standard deviation of the moving probability.}
 
-\item{\code{fsize}}{Firm size.}
+\item{\code{fsize}}{Base firm size parameter.}
 
-\item{\code{w_sigma}}{Standard deviation of wages.}
+\item{\code{w_sigma}}{Standard deviation of the wage shock.}
 
 \item{\code{neduc}}{Number of education levels.}
 
-\item{\code{sort_gap}}{Sorting gap.}
+\item{\code{sort_gap}}{Sorting gap for gender bias.}
 
-\item{\code{shocks}}{Shocks parameter.}
+\item{\code{shocks}}{Numeric vector of time-period shocks.}
 }}
 
+\examples{
+lm_obj <- simlabormarket(nk = 3, nl = 3, nt = 3, ni = 100, lambda = 0.3)
+lm_obj        # calls show()
+lm_obj@panel  # access the panel data
+}
+\seealso{
+\code{\link[=simlabormarket]{simlabormarket()}} which creates instances of this class.
+}

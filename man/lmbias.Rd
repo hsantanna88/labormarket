@@ -9,6 +9,7 @@ lmbias(
   data,
   vcov = "HC1",
   R = 1000,
+  xvarname = "xbeta",
   parallel = c("no", "multicore", "snow"),
   cluster = NULL,
   ncpus = getOption("boot.ncpus", 1L),
@@ -16,32 +17,35 @@ lmbias(
 )
 }
 \arguments{
-\item{femodel}{A model object of class \code{fixest} (from the \code{lfe} package) that contains the
-fixed effects estimates to be corrected.}
+\item{femodel}{A model object of class \code{fixest} (from the \code{fixest} package) that contains the
+fixed effects estimates to be corrected. Must have at least two fixed effects.}
 
-\item{data}{A data.table object that contains the dataset used for the fixed effects model.}
+\item{data}{A data.frame or data.table object that contains the dataset used for the fixed effects model.}
 
 \item{vcov}{A character string specifying the type of heteroskedasticity correction to be
-used. Currently, only "HC0" and "HC1" are supported.}
+used. Must be one of \code{"HC0"} or \code{"HC1"} (default).}
 
 \item{R}{An integer that sets the number of bootstrap replications. Default is 1000.}
 
+\item{xvarname}{A character string giving the name of the column in \code{data} that contains
+the linear predictor (X * beta). Default is \code{"xbeta"}.}
+
 \item{parallel}{A character string that determines the type of parallel operation to be used
-(if any). Possible values are "no", "multicore", and "snow". Default is "no".}
+(if any). Possible values are \code{"no"}, \code{"multicore"}, and \code{"snow"}. Default is \code{"no"}.}
 
 \item{cluster}{An optional vector or factor that provides the data's cluster IDs if cluster
 bootstrapping is desired.}
 
 \item{ncpus}{An integer specifying the number of CPUs to be used for parallel processing.
-This argument is relevant only if \code{parallel} is set to "multicore" or "snow".
+This argument is relevant only if \code{parallel} is set to \code{"multicore"} or \code{"snow"}.
 Default uses the option set in \code{getOption("boot.ncpus", 1L)}.}
 
 \item{cl}{An optional parallel or snow cluster for use with \code{parallel = "snow"}. If not
 supplied and \code{parallel = "snow"}, a cluster on the local machine is created.}
 }
 \value{
-A matrix that presents the variance, covariance, and correlation for the original
-fixed effects, the estimated bias, and the corrected measures.
+A 3x4 matrix with rows \code{"Original"}, \code{"Bias"}, and \code{"Corrected"}, and columns for
+variance of each fixed effect, covariance, and correlation.
 }
 \description{
 The \code{lmbias} function applies a bootstrapping technique to correct the limited mobility bias
@@ -50,8 +54,36 @@ on the method proposed by Azkarate-Askasua and Zerecero (2022). It uses a Radema
 vector and the fixest package's model specifications for its calculations.
 }
 \examples{
-# Assuming example data and model exist:
-# data <- data.table(...)
-# model <- feols(y ~ x1 + x2 | fe1 + fe2, data = data)
-# lmbias(model, data)
+\donttest{
+set.seed(1)
+# Simulate a labor market with high mobility for connectivity
+lm_sim <- simlabormarket(nk = 2, nl = 2, nt = 5, ni = 2000, lambda = 0.5)
+panel <- lm_sim@panel
+panel$fid <- as.factor(panel$fid)
+panel$i   <- as.factor(panel$i)
+
+# Restrict to the largest connected set
+cf <- lfe::compfactor(list(panel$i, panel$fid))
+largest <- names(which.max(table(cf)))
+panel <- panel[cf == largest, ]
+panel$i   <- droplevels(panel$i)
+panel$fid <- droplevels(panel$fid)
+
+# Fit a two-way fixed effects model
+model <- fixest::feols(lw ~ 1 | i + fid, data = panel)
+
+# Add the linear predictor column (match model obs)
+panel <- panel[!is.na(predict(model, newdata = panel)), ]
+panel$xbeta <- 0
+
+# Correct limited mobility bias (small R for demo)
+lmbias(model, panel, R = 50)
+}
+}
+\references{
+Azkarate-Askasua, M. and Zerecero, M. (2022). "The Macroeconomics of Firms' Financing."
+Working Paper. \url{https://github.com/mazkarate/bias_correction}
+}
+\seealso{
+\code{\link[=simlabormarket]{simlabormarket()}} for simulating labor market data suitable for this function.
 }

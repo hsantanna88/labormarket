@@ -1,40 +1,69 @@
 #' Corrects the Limited Mobility Bias Using Bootstrap
 #'
-#' The `lmbias` function applies a bootstrapping technique to correct the limited mobility bias 
-#' (often referred to as small sample bias) in fixed-effects models. This implementation is based 
-#' on the method proposed by Azkarate-Askasua and Zerecero (2022). It uses a Rademacher random 
+#' The `lmbias` function applies a bootstrapping technique to correct the limited mobility bias
+#' (often referred to as small sample bias) in fixed-effects models. This implementation is based
+#' on the method proposed by Azkarate-Askasua and Zerecero (2022). It uses a Rademacher random
 #' vector and the fixest package's model specifications for its calculations.
 #'
-#' @param femodel A model object of class `fixest` (from the `lfe` package) that contains the 
-#'        fixed effects estimates to be corrected.
-#' @param data A data.table object that contains the dataset used for the fixed effects model.
-#' @param vcov A character string specifying the type of heteroskedasticity correction to be 
-#'        used. Currently, only "HC0" and "HC1" are supported.
+#' @param femodel A model object of class `fixest` (from the `fixest` package) that contains the
+#'        fixed effects estimates to be corrected. Must have at least two fixed effects.
+#' @param data A data.frame or data.table object that contains the dataset used for the fixed effects model.
+#' @param vcov A character string specifying the type of heteroskedasticity correction to be
+#'        used. Must be one of `"HC0"` or `"HC1"` (default).
 #' @param R An integer that sets the number of bootstrap replications. Default is 1000.
-#' @param parallel A character string that determines the type of parallel operation to be used 
-#'        (if any). Possible values are "no", "multicore", and "snow". Default is "no".
-#' @param cluster An optional vector or factor that provides the data's cluster IDs if cluster 
+#' @param xvarname A character string giving the name of the column in `data` that contains
+#'        the linear predictor (X * beta). Default is `"xbeta"`.
+#' @param parallel A character string that determines the type of parallel operation to be used
+#'        (if any). Possible values are `"no"`, `"multicore"`, and `"snow"`. Default is `"no"`.
+#' @param cluster An optional vector or factor that provides the data's cluster IDs if cluster
 #'        bootstrapping is desired.
-#' @param ncpus An integer specifying the number of CPUs to be used for parallel processing. 
-#'        This argument is relevant only if `parallel` is set to "multicore" or "snow". 
+#' @param ncpus An integer specifying the number of CPUs to be used for parallel processing.
+#'        This argument is relevant only if `parallel` is set to `"multicore"` or `"snow"`.
 #'        Default uses the option set in `getOption("boot.ncpus", 1L)`.
-#' @param cl An optional parallel or snow cluster for use with `parallel = "snow"`. If not 
+#' @param cl An optional parallel or snow cluster for use with `parallel = "snow"`. If not
 #'        supplied and `parallel = "snow"`, a cluster on the local machine is created.
-#' 
-#' @return A matrix that presents the variance, covariance, and correlation for the original 
-#'         fixed effects, the estimated bias, and the corrected measures.
-#' 
+#'
+#' @return A 3x4 matrix with rows `"Original"`, `"Bias"`, and `"Corrected"`, and columns for
+#'         variance of each fixed effect, covariance, and correlation.
+#'
+#' @references
+#' Azkarate-Askasua, M. and Zerecero, M. (2022). "The Macroeconomics of Firms' Financing."
+#' Working Paper. \url{https://github.com/mazkarate/bias_correction}
+#'
+#' @seealso [simlabormarket()] for simulating labor market data suitable for this function.
+#'
 #' @import Matrix
 #' @importFrom boot boot
 #' @importFrom lfe compfactor
 #' @import fixest
 #' @export lmbias
-#' 
-#' @examples 
-#' # Assuming example data and model exist:
-#' # data <- data.table(...)
-#' # model <- feols(y ~ x1 + x2 | fe1 + fe2, data = data)
-#' # lmbias(model, data)
+#'
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' # Simulate a labor market with high mobility for connectivity
+#' lm_sim <- simlabormarket(nk = 2, nl = 2, nt = 5, ni = 2000, lambda = 0.5)
+#' panel <- lm_sim@panel
+#' panel$fid <- as.factor(panel$fid)
+#' panel$i   <- as.factor(panel$i)
+#'
+#' # Restrict to the largest connected set
+#' cf <- lfe::compfactor(list(panel$i, panel$fid))
+#' largest <- names(which.max(table(cf)))
+#' panel <- panel[cf == largest, ]
+#' panel$i   <- droplevels(panel$i)
+#' panel$fid <- droplevels(panel$fid)
+#'
+#' # Fit a two-way fixed effects model
+#' model <- fixest::feols(lw ~ 1 | i + fid, data = panel)
+#'
+#' # Add the linear predictor column (match model obs)
+#' panel <- panel[!is.na(predict(model, newdata = panel)), ]
+#' panel$xbeta <- 0
+#'
+#' # Correct limited mobility bias (small R for demo)
+#' lmbias(model, panel, R = 50)
+#' }
 
 lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
                     parallel = c("no", "multicore", "snow"), cluster =  NULL,
@@ -42,16 +71,44 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
 
 # Checking if the variables are correct
   if (!inherits(femodel, "fixest")) {
-    stop("The model must be a feols object")
+    stop("The model must be a fixest object (e.g., from feols())")
   }
 
   if(!("data.frame" %in% class(data))) {
-    stop("The data must be a data.table object")
+    stop("The data must be a data.frame or data.table object")
+  }
+
+  vcov <- match.arg(vcov, c("HC0", "HC1"))
+
+  if (!is.numeric(R) || length(R) != 1 || R < 1) {
+    stop("R must be a positive integer (number of bootstrap replications)")
+  }
+  R <- as.integer(R)
+
+  if (!is.character(xvarname) || length(xvarname) != 1 || !(xvarname %in% names(data))) {
+    stop("xvarname must be a column name present in the data")
+  }
+
+  if (length(femodel$fixef_vars) < 2) {
+    stop("The model must have at least two fixed effects")
   }
 
   # fixed effects names
   fe1 <- femodel$fixef_vars[1]
   fe2 <- femodel$fixef_vars[2]
+
+  # Subset data to observations used by the model (handles singleton removal)
+  nobs_model <- femodel$nobs
+  if (nrow(data) != nobs_model) {
+    obs_removed <- femodel$obs_selection$obsRemoved
+    if (!is.null(obs_removed)) {
+      data <- data[obs_removed, ]  # negative indices in fixest = rows to drop
+    }
+    if (nrow(data) != nobs_model) {
+      stop("Data row count (", nrow(data), ") does not match model nobs (", nobs_model, "). ",
+           "Please pass the same data used to fit the model.")
+    }
+  }
 
   data[[fe1]] <- factor(data[[fe1]])
   data[[fe2]] <- factor(data[[fe2]])
@@ -62,7 +119,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
 
   # #obs
   nobs <- femodel$nobs
-  
+
   nfe1 <- length(femodel$fixef_sizes[[1]])
   nfe2 <- length(femodel$fixef_sizes[[2]])
   ncovar <- length(femodel$coefficients)
@@ -73,12 +130,12 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
   data[[fe2]] <- as.factor(data[[fe2]])
 
   # checking the connected set
-  if(levels(compfactor(list(factor(data[[fe1]]), factor(data[[fe2]])))) != 1) {
-    stop("The fixed effects must be connected in a single graph. \\n
+  if(nlevels(compfactor(list(factor(data[[fe1]]), factor(data[[fe2]])))) != 1) {
+    stop("The fixed effects must be connected in a single graph. \n
          Please check the data and the model with lfe::compfactor.")
   }
 
-  # left hand side 
+  # left hand side
   lhs <- as.character(formula(femodel))[3]
 
     # bootstrap function
@@ -101,9 +158,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
     phi <- sqrt(resid(femodel)^2)
   } else if (vcov == "HC1") {
     phi <- sqrt(resid(femodel)^2 * nobs / (nobs - k))
-  } #else if (vcov == "HC2") {
-    #phi <- sqrt(resid(femodel)^2 / (1 - diag(cbind(Xcovar, X1, X2) %*% solve(crossprod(cbind(Xcovar, X1, X2)), t(cbind(Xcovar, X1, X2))))))
-  #}
+  }
 
   # Clustering method
   calculate_bias <- function(data = data, indices, phi, nobs, lhs, nfe1,
@@ -112,7 +167,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
 
     # generating the random -1, 1 vetor (rademacher)
     if(is.null(cluster)) {
-      
+
       r  <- sample(c(-1, 1), nobs, replace = TRUE)
       data$r <- r * phi
 
@@ -125,7 +180,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
 
     }
 
-    
+
     new_fml <- formula(paste0("r ~ ", lhs))
     model <- feols(new_fml, data = data)
     fe <- fixef(model)
@@ -144,7 +199,7 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
     m1 <- t(beta_fe1) %*% crossprod(X1) %*% beta_fe1
     m1 <- (1/(nobs - 1)) * (m1 - (1/nobs) * (t(beta_fe1) %*% t(X1) %*% ones %*% t(ones) %*% X1 %*% beta_fe1))
 
-    
+
     # Moment 2 --------------------------------------------------------------
     m2 <- (t(beta_fe2) %*% crossprod(X2) %*% beta_fe2)
     m2 <- (1/(nobs - 1)) * (m2 - (1/nobs) * (t(beta_fe2) %*% t(X2) %*% ones %*% t(ones) %*% X2 %*% beta_fe2))
@@ -184,6 +239,6 @@ lmbias <- function(femodel, data, vcov = "HC1", R = 1000, xvarname = "xbeta",
     paste0("Correlation")
   )
   rownames(results) <- c("Original", "Bias", "Corrected")
-  
+
   return(results)
 }

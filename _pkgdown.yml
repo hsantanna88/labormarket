@@ -1,0 +1,31 @@
+url: https://hsantanna88.github.io/labormarket/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+
+development:
+  mode: auto
+
+navbar:
+  structure:
+    left:  [intro, articles, reference]
+    right: [search, github]
+  components:
+    intro:
+      text: Get Started
+      href: articles/introduction.html
+    articles:
+      text: Articles
+      menu:
+        - text: Introduction
+          href: articles/introduction.html
+        - text: Analyzing a Simulated Labor Market
+          href: articles/data-analysis.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/hsantanna88/labormarket
+      aria-label: GitHub

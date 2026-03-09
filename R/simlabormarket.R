@@ -1,38 +1,66 @@
-#' A Function that simulates a labor market with gender bias.
+#' Simulate a Labor Market with Gender Bias
 #'
 #' This function creates a simulated labor market with parameters that control
 #' the number of firm types, the fraction of females in the labor market,
-#' percentage of movers, etc. It can also plot the transition and steady-state
-#' matrices if requested.
+#' percentage of movers, etc. The simulated panel includes worker and firm
+#' fixed effects, match effects, and optionally Mincer-style human capital
+#' variables (age, education, experience).
 #'
-#' @param nk Number of firm types or clusters.
-#' @param ratiog Fraction of females in the labor market.
-#' @param lambda Percentage of movers.
-#' @param nl Number of worker types or clusters.
-#' @param nt Number of time periods.
-#' @param ni Number of individuals.
-#' @param mincer Logical, if TRUE, the function will generate wages using the mincer equation together with a random effects.
-#' @return an object representing the labor market with the following features.
-#' 
+#' @param nk Integer >= 2. Number of firm types or clusters.
+#' @param ratiog Numeric in (0, 1). Fraction of females in the labor market.
+#' @param lambda Numeric in (0, 1). Probability of a worker moving firms each period.
+#' @param nl Integer >= 2. Number of worker types or clusters.
+#' @param nt Integer >= 2. Number of time periods.
+#' @param ni Positive integer. Number of individuals.
+#' @param mincer Logical. If `TRUE`, wages are generated using a Mincer equation
+#'        (returns on education, experience, and experience squared) together with
+#'        worker and firm random effects. Default is `FALSE`.
+#'
+#' @return A [LaborMarket-class] S4 object containing the simulated panel and parameters.
+#'
+#' @seealso [lmbias()] for correcting limited mobility bias using the simulated data,
+#'   [LaborMarket-class] for the S4 class definition.
+#'
 #' @importFrom reshape2 melt
 #' @importFrom data.table data.table setnames setkey
-#' @import lattice
-#' @import gridExtra
-#' @import ggplot2
 #' @importFrom crayon blue green red yellow
-#' @import futile.logger
-#' @import feather
 #' @import methods
-#' @importFrom stats cor cov dexp dnorm formula qnorm rbeta resid rnorm runif var
+#' @importFrom stats cor cov dbeta dexp dnorm formula qnorm rbeta resid rnorm runif var
 #' @export simlabormarket
 #'
 #' @examples
-#' # To create a default labor market simulation:
-#' labormarket <- simlabormarket(nk = 5, ratiog = 0.5, lambda = 0.1,
-#'                               nl = 3, nt = 10, ni = 100)
+#' # Simulate a small labor market
+#' lm_obj <- simlabormarket(nk = 3, nl = 3, nt = 3, ni = 100, lambda = 0.3)
+#'
+#' # With Mincer wage equation
+#' lm_mincer <- simlabormarket(nk = 3, nl = 3, nt = 3, ni = 100,
+#'                              lambda = 0.3, mincer = TRUE)
 #'
 
 simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4, ni = 100000, mincer = FALSE) {
+
+  # Input validation
+  if (!is.numeric(nk) || length(nk) != 1 || nk < 2 || nk != as.integer(nk)) {
+    stop("nk must be an integer >= 2")
+  }
+  if (!is.numeric(nl) || length(nl) != 1 || nl < 2 || nl != as.integer(nl)) {
+    stop("nl must be an integer >= 2")
+  }
+  if (!is.numeric(nt) || length(nt) != 1 || nt < 2 || nt != as.integer(nt)) {
+    stop("nt must be an integer >= 2")
+  }
+  if (!is.numeric(ni) || length(ni) != 1 || ni < 1 || ni != as.integer(ni)) {
+    stop("ni must be a positive integer")
+  }
+  if (!is.numeric(ratiog) || length(ratiog) != 1 || ratiog <= 0 || ratiog >= 1) {
+    stop("ratiog must be a number strictly between 0 and 1")
+  }
+  if (!is.numeric(lambda) || length(lambda) != 1 || lambda <= 0 || lambda >= 1) {
+    stop("lambda must be a number strictly between 0 and 1")
+  }
+  if (!is.logical(mincer) || length(mincer) != 1) {
+    stop("mincer must be TRUE or FALSE")
+  }
 
   # Labor Market Inner Parameters
   #-------------------------------------------------------------------------------------------------
@@ -163,51 +191,30 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
     # network matrix -----------------------------------------------------------
     network[i,1] = sample.int(nk,1,prob = H[l, , g])
 
-    if(mincer == TRUE) {
+    if (mincer) {
       # age matrix ---------------------------------------------------------------
-      # drawing the age
       # Generate age pyramid that follows an exponential distribution
-
-      if((e + start_age) < 18) {
-        # I don't want individuals younger than 18
-        p_age = dexp(seq_along(18:65), rate = 0.05)
-        p_age = p_age/sum(p_age)
-        age[i,1] = sample(18:65, 1, prob = p_age)
-      } else {
-        p_age = dexp(seq_along((e + start_age):65), rate = 0.05)
-        p_age = p_age/sum(p_age)
-        age[i,1] = sample((e + start_age):65, 1, prob = p_age)
-      }
+      min_age = max(18, e + start_age)
+      p_age = dexp(seq_along(min_age:65), rate = 0.05)
+      p_age = p_age / sum(p_age)
+      age[i, 1] = sample(min_age:65, 1, prob = p_age)
 
       # experience matrix ---------------------------------------------------------
-      # start by allowing xp to be the difference between age and education
-      experience[i,1] = age[i,1] - e - start_age
+      experience[i, 1] = age[i, 1] - e - start_age
+    }
 
-      # updating spellcount and network matrix ------------------------------------
-      for (t in 2:nt) {
-        if (runif(1)<lambda) {
-          network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
-          spellcount[i,t] = spellcount[i,t-1] + 1
-          # reset experience
-          experience[i,t] = 0
-        } else {
-          network[i,t]    = network[i,t-1]
-          spellcount[i,t] = spellcount[i,t-1]
-          experience[i,t] = experience[i,t-1] + 1
-        }
-        age[i,t] = age[i,t-1] + 1
+    # updating spellcount and network matrix ------------------------------------
+    for (t in 2:nt) {
+      if (runif(1) < lambda) {
+        network[i, t] = sample.int(nk, 1, prob = G[l, network[i, t - 1], , g])
+        spellcount[i, t] = spellcount[i, t - 1] + 1
+        if (mincer) experience[i, t] = 0
+      } else {
+        network[i, t]    = network[i, t - 1]
+        spellcount[i, t] = spellcount[i, t - 1]
+        if (mincer) experience[i, t] = experience[i, t - 1] + 1
       }
-    } else {
-      # updating spellcount and network matrix ------------------------------------
-      for (t in 2:nt) {
-        if (runif(1)<lambda) {
-          network[i,t] = sample.int(nk,1,prob = G[l,network[i,t-1], , g])
-          spellcount[i,t] = spellcount[i,t-1] + 1
-        } else {
-          network[i,t]    = network[i,t-1]
-          spellcount[i,t] = spellcount[i,t-1]
-        }
-      }
+      if (mincer) age[i, t] = age[i, t - 1] + 1
     }
 
   }
@@ -216,19 +223,11 @@ simlabormarket <- function(nk = 6, ratiog = 0.45, lambda = 0.05, nl = 10, nt = 4
   #-------------------------------------------------------------------------------------------------
 
 	data  = data.table(melt(network, c('i', 't')))
-	data2 = data.table(melt(spellcount, c('i', 't')))
-  if (mincer == TRUE) {
-    data3 = data.table(melt(age, c('i', 't')))
-    data4 = data.table(melt(experience, c('i', 't')))
-  }
-
 	setnames(data, "value", "k")
-
-  # Code directly from the loop
-	data[, spell := data2$value]
-  if (mincer == TRUE) {
-    data[, age := data3$value]
-    data[, experience := data4$value]
+	data[, spell := data.table(melt(spellcount, c('i', 't')))$value]
+  if (mincer) {
+    data[, age := data.table(melt(age, c('i', 't')))$value]
+    data[, experience := data.table(melt(experience, c('i', 't')))$value]
   }
 
   # worker, education level and gender

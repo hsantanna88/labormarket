@@ -1,26 +1,28 @@
 Package: labormarket
 Title: Tools for Learning How Labor Markets Work
-Version: 0.0.0.2001
-Authors@R: 
+Version: 0.1.0
+Authors@R:
     person("Hugo", "Sant'Anna", email = "hsantanna@uga.edu", role = c("aut", "cre"))
 Description: A collection of econometric tools made for the exploration of worker-firm matched datasets. It aims to simplify complex concepts, and serves as an invaluable ally for both undergraduates and graduates in navigating labor economics research.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Imports:
     data.table,
-    futile.logger,
-    feather,
     crayon,
     methods,
-    ggplot2,
-    gridExtra,
-    lattice,
     reshape2,
     lfe,
     fixest,
     Matrix,
     boot
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    hexSticker
+Config/testthat/edition: 3
+VignetteBuilder: knitr
 URL: https://github.com/hsantanna88/labormarket
 BugReports: https://github.com/hsantanna88/labormarket/issues
