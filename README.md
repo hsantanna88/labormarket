@@ -1,7 +1,7 @@
 # labormarket <img src="man/figures/logo.png" align="right" height="139" />
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/hsantanna88/labormarket/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hsantanna88/labormarket/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/hugosantanna/labormarket/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hugosantanna/labormarket/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 **labormarket** is an R package for simulating worker-firm matched datasets and correcting limited mobility bias in two-way fixed effects models. It is designed as a teaching and research tool for labor economics.
@@ -12,7 +12,7 @@ Install the development version from GitHub:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("hsantanna88/labormarket")
+devtools::install_github("hugosantanna/labormarket")
 ```
 
 ## Quick Start
