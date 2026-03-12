@@ -11,7 +11,7 @@ Install the development version from GitHub:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("hsantanna88/labormarket")
+devtools::install_github("hugosantanna/labormarket")
 ```
 
 ## Quick Start
@@ -32,7 +32,7 @@ head(panel)
 ### Correct Limited Mobility Bias
 
 After fitting a two-way fixed effects (AKM) model, use
-[`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+[`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
 to correct the limited mobility bias following Azkarate-Askasua and
 Zerecero (2022):
 

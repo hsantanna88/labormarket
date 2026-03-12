@@ -88,7 +88,7 @@ Firms' Financing." Working Paper.
 
 ## See also
 
-[`simlabormarket()`](https://hsantanna88.github.io/labormarket/reference/simlabormarket.md)
+[`simlabormarket()`](https://hugosantanna.github.io/labormarket/reference/simlabormarket.md)
 for simulating labor market data suitable for this function.
 
 ## Examples

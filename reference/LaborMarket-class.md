@@ -73,7 +73,7 @@ parameters.
 
 ## See also
 
-[`simlabormarket()`](https://hsantanna88.github.io/labormarket/reference/simlabormarket.md)
+[`simlabormarket()`](https://hugosantanna.github.io/labormarket/reference/simlabormarket.md)
 which creates instances of this class.
 
 ## Examples

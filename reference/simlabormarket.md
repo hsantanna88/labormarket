@@ -55,14 +55,14 @@ simlabormarket(
 ## Value
 
 A
-[LaborMarket](https://hsantanna88.github.io/labormarket/reference/LaborMarket-class.md)
+[LaborMarket](https://hugosantanna.github.io/labormarket/reference/LaborMarket-class.md)
 S4 object containing the simulated panel and parameters.
 
 ## See also
 
-[`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+[`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
 for correcting limited mobility bias using the simulated data,
-[LaborMarket](https://hsantanna88.github.io/labormarket/reference/LaborMarket-class.md)
+[LaborMarket](https://hugosantanna.github.io/labormarket/reference/LaborMarket-class.md)
 for the S4 class definition.
 
 ## Examples

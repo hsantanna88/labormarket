@@ -11,7 +11,7 @@ Install the development version from GitHub:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("hsantanna88/labormarket")
+devtools::install_github("hugosantanna/labormarket")
 ```
 
 ## Quick Start
@@ -32,7 +32,7 @@ head(panel)
 ### Correct Limited Mobility Bias
 
 After fitting a two-way fixed effects (AKM) model, use
-[`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+[`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
 to correct the limited mobility bias following Azkarate-Askasua and
 Zerecero (2022):
 
@@ -65,11 +65,11 @@ MIT
 
 ## All functions
 
-- [`LaborMarket-class`](https://hsantanna88.github.io/labormarket/reference/LaborMarket-class.md)
+- [`LaborMarket-class`](https://hugosantanna.github.io/labormarket/reference/LaborMarket-class.md)
   : S4 Class for Representing a Simulated Labor Market
-- [`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+- [`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
   : Corrects the Limited Mobility Bias Using Bootstrap
-- [`simlabormarket()`](https://hsantanna88.github.io/labormarket/reference/simlabormarket.md)
+- [`simlabormarket()`](https://hugosantanna.github.io/labormarket/reference/simlabormarket.md)
   : Simulate a Labor Market with Gender Bias
 
 # Articles
@@ -77,6 +77,6 @@ MIT
 ### All vignettes
 
 - [Analyzing a Simulated Labor
-  Market](https://hsantanna88.github.io/labormarket/articles/data-analysis.md):
+  Market](https://hugosantanna.github.io/labormarket/articles/data-analysis.md):
 - [Introduction to
-  labormarket](https://hsantanna88.github.io/labormarket/articles/introduction.md):
+  labormarket](https://hugosantanna.github.io/labormarket/articles/introduction.md):

@@ -220,7 +220,7 @@ workers sort into high-paying firms.
 
 The variance decomposition above is **biased** when firms have few
 movers. We use
-[`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+[`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
 to correct this:
 
 ``` r
@@ -269,11 +269,11 @@ meaningfully change the estimated sorting correlation.
 
 ## Summary
 
-| Step     | Function                                                                                    | What it does                                   |
-|----------|---------------------------------------------------------------------------------------------|------------------------------------------------|
-| Simulate | [`simlabormarket()`](https://hsantanna88.github.io/labormarket/reference/simlabormarket.md) | Generate worker-firm panel with known DGP      |
-| Estimate | [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)                  | Two-way FE (AKM) decomposition                 |
-| Correct  | [`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)                 | Bootstrap bias correction for limited mobility |
+| Step     | Function                                                                                     | What it does                                   |
+|----------|----------------------------------------------------------------------------------------------|------------------------------------------------|
+| Simulate | [`simlabormarket()`](https://hugosantanna.github.io/labormarket/reference/simlabormarket.md) | Generate worker-firm panel with known DGP      |
+| Estimate | [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)                   | Two-way FE (AKM) decomposition                 |
+| Correct  | [`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)                 | Bootstrap bias correction for limited mobility |
 
 This workflow lets you study how parameters like mobility (`lambda`),
 number of firm types (`nk`), and sample size (`ni`) affect the magnitude

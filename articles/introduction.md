@@ -12,7 +12,7 @@ The **labormarket** package provides tools for:
 ## Simulating Labor Markets
 
 The
-[`simlabormarket()`](https://hsantanna88.github.io/labormarket/reference/simlabormarket.md)
+[`simlabormarket()`](https://hugosantanna.github.io/labormarket/reference/simlabormarket.md)
 function generates a panel dataset of workers and firms. Key parameters:
 
 | Parameter | Description                 | Default |
@@ -166,7 +166,7 @@ summary(model)
 
 When the number of movers between firms is small, the variance of
 estimated fixed effects is upward-biased. The
-[`lmbias()`](https://hsantanna88.github.io/labormarket/reference/lmbias.md)
+[`lmbias()`](https://hugosantanna.github.io/labormarket/reference/lmbias.md)
 function implements the bootstrap correction from Azkarate-Askasua and
 Zerecero (2022).
 
